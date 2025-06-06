@@ -1865,10 +1865,9 @@ class CastChartPage(QWidget):
     
     def setup_ui(self):
         """Setup the cast chart form with full-width layout"""
-        # Main layout - use full width without centering
-        main_layout = QVBoxLayout()
+        # Main layout wraps a scroll area so the form feels like a web page
+        main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(40, 30, 40, 30)
-        # Use tighter spacing for better vertical rhythm
         main_layout.setSpacing(16)
         
         # Form title
@@ -1895,7 +1894,7 @@ class CastChartPage(QWidget):
             status_label.setAlignment(Qt.AlignCenter)
             main_layout.addWidget(status_label)
         
-        # Create form container that takes full width
+        # Create form container that will live inside a scroll area
         form_container = QWidget()
         form_container.setStyleSheet("""
             QWidget {
@@ -1905,7 +1904,7 @@ class CastChartPage(QWidget):
                 padding: 40px;
             }
         """)
-        
+
         form_layout = QVBoxLayout(form_container)
         form_layout.setSpacing(16)
         
@@ -1983,8 +1982,13 @@ class CastChartPage(QWidget):
         self.submit_button.clicked.connect(self.cast_chart)
         form_layout.addWidget(self.submit_button)
         
-        # Add form container to main layout (no centering wrapper)
-        main_layout.addWidget(form_container)
+        # Wrap form in a scroll area for better UX on small screens
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(form_container)
+        scroll_area.setMaximumWidth(600)
+
+        main_layout.addWidget(scroll_area, alignment=Qt.AlignCenter)
         main_layout.addStretch()
         
         self.setLayout(main_layout)
@@ -2350,7 +2354,11 @@ class ChartDetailPage(QWidget):
     def setup_ui(self):
         """Setup the enhanced chart detail UI"""
         layout = QVBoxLayout()
-        
+
+        # Placeholder for a summary card of the chart
+        self.card_layout = QVBoxLayout()
+        layout.addLayout(self.card_layout)
+
         # Chart header with enhanced information
         self.header_widget = self.create_chart_header()
         layout.addWidget(self.header_widget)
@@ -2870,8 +2878,21 @@ This text editor supports rich formatting - use the right-click menu for options
     def set_chart_data(self, chart_data: Dict[str, Any]):
         """Set and display chart data"""
         self.chart_data = chart_data
+
+        # Update summary card at top
+        if hasattr(self, "card_layout"):
+            while self.card_layout.count():
+                child = self.card_layout.takeAt(0).widget()
+                if child:
+                    child.deleteLater()
+
+            card = ChartCard(chart_data)
+            self.card_layout.addWidget(card)
+
         self.update_display()
-        logger.info(f"Chart detail page updated for chart ID: {chart_data.get('id', 'Unknown')}")
+        logger.info(
+            f"Chart detail page updated for chart ID: {chart_data.get('id', 'Unknown')}"
+        )
     
     def update_display(self):
         """Update all displays with current chart data"""
